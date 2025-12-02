@@ -1,0 +1,149 @@
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 40px;
+	padding: 0 18px;
+	border-radius: 999px;
+	border: 1px solid transparent;
+	background: transparent;
+	color: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	letter-spacing: 0.01em;
+	text-transform: none;
+	cursor: pointer;
+	transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn:focus-visible {
+	outline: 2px solid #5b8dff;
+	outline-offset: 2px;
+}
+
+.btn:active {
+	transform: scale(0.98);
+}
+
+.btn-primary,
+.btn-status--change {
+	/* existing primary styles */
+	background: linear-gradient(120deg, #5e8dff, #3c6bff);
+	color: #ffffff;
+	border: none;
+	min-height: 44px;
+	border-radius: 14px;
+	padding: 0 20px;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	cursor: pointer;
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-primary:hover,
+.btn-status--change:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 10px 20px rgba(60, 107, 255, 0.35);
+}
+
+.btn-secondary {
+	background: #182748;
+	border-color: #2e3e62;
+	color: #e7edff;
+}
+
+.btn-secondary:hover {
+	background: #21345c;
+}
+
+.btn-ghost {
+	background: rgba(34, 55, 95, 0.35);
+	border-color: rgba(80, 123, 220, 0.3);
+	color: #b7c4ff;
+}
+
+.btn-ghost:hover {
+	background: rgba(80, 123, 220, 0.2);
+}
+
+.btn[disabled] {
+	opacity: 0.6;
+	cursor: not-allowed;
+	box-shadow: none;
+}
+
+/* Delay button (used in edit modal) */
+.btn-delay {
+	background: #fd7f7f;
+	color: #a50000;
+	border: 1px solid rgba(165, 0, 0, 0.12);
+	min-height: 44px;
+	border-radius: 14px;
+	padding: 0 16px;
+	font-weight: 600;
+}
+.btn-delay:hover {
+	filter: brightness(0.98);
+	box-shadow: 0 8px 18px rgba(253,127,127,0.12);
+}
+
+/* Plan revert button */
+.btn-plan {
+	background: linear-gradient(120deg, #4c5d8f, #33406b);
+	color: #ffffff;
+	border: 1px solid rgba(76, 93, 143, 0.4);
+	min-height: 44px;
+	border-radius: 14px;
+	padding: 0 16px;
+	font-weight: 600;
+}
+.btn-plan:hover {
+	filter: brightness(1.05);
+	box-shadow: 0 8px 18px rgba(76,93,143,0.25);
+}
+
+/* Delete button (matches Delay styling) */
+.btn-delete {
+	background: #a50000;
+	color: #ffffff;
+	border: 1px solid rgba(165, 0, 0, 0.12);
+	min-height: 44px;
+	border-radius: 14px;
+	padding: 0 16px;
+	font-weight: 600;
+}
+.btn-delete:hover {
+	filter: brightness(0.98);
+	box-shadow: 0 8px 18px rgba(253,127,127,0.12);
+}
+
+/* Edit button (same visual treatment as Delete) */
+.btn-edit {
+	background: linear-gradient(120deg, #5e8dff, #3c6bff);
+	color: #ffffff;
+	border: 1px solid rgba(165, 0, 0, 0.12);
+	min-height: 44px;
+	border-radius: 14px;
+	padding: 0 16px;
+	font-weight: 600;
+}
+.btn-edit:hover {
+	filter: brightness(0.98);
+	box-shadow: 0 8px 18px rgba(253,127,127,0.12);
+}
+
+/* group left-aligned actions (keeps delete+edit flush left) */
+.modal__actions-left {
+	display: inline-flex;
+	gap: 8px;
+	margin-right: auto;
+	align-items: center;
+}
+
+/* Ensure elements with the hidden attribute are actually hidden (override author rules like .btn) */
+[hidden],
+.btn[hidden] {
+	display: none !important;
+	visibility: hidden !important;
+}

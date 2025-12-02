@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - Tổng công ty thiết bị điện Đông Anh - EEMC</title>
+    <link rel="stylesheet" href="asset/css/login.css">
+</head>
+<body class="auth-page">
+    <div class="auth-wrap">
+        <section class="auth-brand">
+            <h1 class="auth-brand__title">Tổng công ty thiết bị điện Đông Anh - EEMC</h1>
+        </section>
+        <section class="auth-card" role="form" aria-label="Đăng nhập">
+            <form id="authForm" novalidate>
+                <input id="authEmail" class="auth-input" type="text" placeholder="Email address or phone number" autocomplete="username">
+                <input id="authPassword" class="auth-input" type="password" placeholder="Password" autocomplete="current-password">
+                <button class="auth-btn auth-btn--login" type="submit">Log in</button>
+                <div id="authError" class="auth-error"></div>
+                <a class="auth-link" href="#" id="forgotLink">Forgotten password?</a>
+                <div class="auth-divider"></div>
+            </form>
+            <div class="auth-foot">Create a Page for a celebrity, brand or business.</div>
+        </section>
+    </div>
+
+    <script src="asset/js/login.js"></script>
+</body>
+</html>

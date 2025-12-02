@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tổng công ty thiết bị điện Đông Anh - EEMC</title>
+    <link rel="stylesheet" href="asset/css/button.css">
+    <link rel="stylesheet" href="asset/css/progress_status.css">
+    <link rel="stylesheet" href="asset/css/index.css">
+    <link rel="stylesheet" href="asset/css/modal_register.css">
+    <link rel="stylesheet" href="asset/css/modal_edit.css">
+    <style>
+        /* Đổi màu icon date picker thành trắng bằng pseudo selector */
+        input[type="date"].hide-picker::-webkit-calendar-picker-indicator {
+            filter: brightness(0) invert(1);
+        }
+        input[type="date"].hide-picker::-ms-input-placeholder { /* Edge */
+            opacity: 0;
+        }
+        input[type="date"].hide-picker::-moz-placeholder { /* Firefox 19+ */
+            opacity: 0;
+        }
+        input[type="date"].hide-picker::placeholder {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="brand">
+                <p class="brand__subtitle">Phần mềm quản lý thực thi sản xuất</p>
+                <h1 class="brand__title">Tổng công ty thiết bị điện Đông Anh - EEMC</h1>
+            </div>
+            <div class="user-panel">
+                <div class="user-panel__info">
+                    <span class="user-panel__name" id="currentUserName">Người dùng</span>
+                    <span class="user-panel__role" id="currentUserRole"></span>
+                </div>
+                <button class="btn btn-secondary" id="logoutBtn" type="button">Đăng xuất</button>
+            </div>
+        </header>
+
+        <div class="app-body">
+            <aside class="sidebar" aria-label="Danh mục lịch">
+                <h2 class="sidebar__title">Danh mục lịch</h2>
+                <nav class="sidebar__nav" id="scheduleNav" role="tablist"></nav>
+            </aside>
+
+            <main class="workspace">
+                <section class="calendar-card">
+                    <header class="calendar-card__header">
+                        <div class="calendar-card__headings">
+                            <h2 class="calendar-card__title" id="scheduleTitle">Lịch sấy MBA</h2>
+                            <p class="calendar-card__subtitle" id="calendarMonthLabel">THÁNG 11 NĂM 2025</p>
+                        </div>
+                        <div class="calendar-card__meta">
+                            <p class="calendar-card__current" id="calendarCurrentDay">Thứ sáu 14/11/2025</p>
+                        </div>
+                    </header>
+
+                    <div class="calendar-toolbar" role="group" aria-label="Điều hướng lịch">
+                        <div class="calendar-toolbar__buttons">
+                            <button class="btn btn-ghost" data-nav="prev">Trước</button>
+                            <button class="btn btn-primary" data-nav="today">Hôm nay</button>
+                            <button class="btn btn-ghost" data-nav="next">Sau</button>
+                        </div>
+                        <div class="usage-chips" id="usageChipsContainer">
+                            <div class="usage-chip" id="slotUsage110">
+                                <span class="usage-chip__label">Slot 110kV:</span>
+                                <span class="usage-chip__count" id="slotUsageCount110">0</span>
+                            </div>
+                            <div class="usage-chip" id="slotUsage220">
+                                <span class="usage-chip__label">Slot 220kV:</span>
+                                <span class="usage-chip__count" id="slotUsageCount220">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="calendar-grid" id="calendarGrid" role="grid" aria-label="Lịch công việc"></div>
+                </section>
+            </main>
+        </div>
+    </div>
+    
+    <template id="calendarAddButtonTemplate">
+        <button type="button" class="calendar-cell__action" aria-label="Thêm sự kiện" data-action="add-event">
+            <span class="calendar-cell__action-icon" aria-hidden="true">+</span>
+        </button>
+    </template>
+
+    <section id="modalRegister" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalRegisterTitle" hidden>
+        <div class="modal__backdrop" data-modal-dismiss></div>
+        <div class="modal__panel" role="document">
+            <header class="modal__header">
+                <h2 id="modalRegisterTitle">Đăng ký lịch</h2>
+                <button type="button" class="modal__close" data-modal-dismiss aria-label="Đóng">×</button>
+            </header>
+            <form id="modalRegisterForm" class="modal__form" novalidate>
+                <div class="modal__field">
+                    <label for="register-date">Ngày đăng ký</label>
+                    <input id="register-date" name="registerDate" type="date" readonly>
+                </div>
+                <div class="modal__field">
+                    <label for="register-name">Người đăng ký</label>
+                    <input id="register-name" name="registerName" type="text" readonly>
+                </div>
+                <div class="modal__field">
+                    <label for="event-title">Chọn lò <span aria-hidden="true">*</span></label>
+                    <select id="event-title" name="eventTitle" required>
+                        <option value="" hidden selected>Chọn lò</option>
+                        <option value="lo1">Lò 1</option>
+                        <option value="lo2">Lò 2</option>
+                    </select>
+                </div>
+                <div class="modal__field">
+                    <label for="register-quantity">Số lượng <span aria-hidden="true">*</span></label>
+                    <select id="register-quantity" name="registerQuantity" required disabled>
+                        <option value="" hidden selected>Số lượng</option>
+                    </select>
+                </div>
+                <div class="modal__field">
+                    <label for="register-serial-container">Số sê-ri <span aria-hidden="true">*</span></label>
+                    <div id="register-serial-container" class="serial-grid" aria-live="polite"></div>
+                </div>
+            </form>
+            <div class="modal__footer">
+                <div class="modal__actions">
+                    <button type="button" class="btn btn-secondary" data-modal-dismiss>Hủy</button>
+                        <button type="submit" class="btn btn-primary" id="modalRegisterSubmit" form="modalRegisterForm">Lưu</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="modalEdit" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalEditTitle" hidden>
+        <div class="modal__backdrop" data-modal-dismiss></div>
+        <div class="modal__panel" role="document">
+            <header class="modal__header">
+                <h2 id="modalEditTitle">Chỉnh sửa lịch</h2>
+                <button type="button" class="modal__close" data-modal-dismiss aria-label="Đóng">×</button>
+            </header>
+            <form id="modalEditForm" class="modal__form" novalidate>
+                <div class="modal__field">
+                    <label>Ngày đăng ký</label>
+                    <input id="edit-date" type="date" class="edit-date-picker">
+                </div>
+                <div class="modal__field">
+                    <label>Người đăng ký</label>
+                    <input id="edit-name" type="text" readonly>
+                </div>
+                <div class="modal__field">
+                    <label>Lò</label>
+                    <input id="edit-furnace" type="text" readonly>
+                </div>
+                <div class="modal__field">
+                    <label>Số lượng</label>
+                    <input id="edit-quantity" type="number" readonly>
+                </div>
+                <div class="modal__field">
+                    <label>Số sê-ri</label>
+                    <div id="edit-serial-container" class="serial-grid serial-grid--readonly" aria-live="polite"></div>
+                </div>
+                <div class="modal__field">
+                    <label>Trạng thái</label>
+                    <input id="edit-status" type="text" readonly>
+                </div>
+                <div class="modal__field">
+                    <label>Lịch sử chỉnh sửa</label>
+                    <div id="edit-history" class="history-log" aria-live="polite"></div>
+                </div>
+            </form>
+            <div class="modal__footer">
+                <div class="modal__actions" id="modalEditActions">
+                    <button type="button" class="btn btn-primary" id="modalEditEditBtn">Lưu</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="modalLineDetail" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalLineDetailTitle" hidden>
+        <div class="modal__backdrop" data-modal-dismiss></div>
+        <div class="modal__panel" role="document">
+            <header class="modal__header">
+                <h2 id="modalLineDetailTitle">Chi tiết line</h2>
+                <button type="button" class="modal__close" data-modal-dismiss aria-label="Đóng">×</button>
+            </header>
+            <div class="modal__form" id="modalLineDetailForm">
+                <div class="modal__field">
+                    <label>Line</label>
+                    <input id="lineDetailLineLabel" type="text" readonly>
+                </div>
+                <div class="modal__field">
+                    <label>Số sê-ri</label>
+                    <input id="lineDetailSerial" type="text" readonly>
+                </div>
+                <div class="modal__field">
+                    <label>Cấp điện áp</label>
+                    <input id="lineDetailVoltage" type="text" readonly>
+                </div>
+                <div class="modal__field">
+                    <label>Người đăng ký</label>
+                    <input id="lineDetailRegistrant" type="text" readonly>
+                </div>
+                <div class="modal__field">
+                    <label>Trạng thái</label>
+                    <input id="lineDetailStatus" type="text" readonly>
+                </div>
+                <div class="modal__field">
+                    <label>Lịch sử trạng thái</label>
+                    <div id="lineDetailHistory" class="history-log" aria-live="polite"></div>
+                </div>
+            </div>
+            <div class="modal__footer">
+                <div class="modal__actions" id="modalLineDetailActions">
+                    <div class="modal__actions-group modal__actions-group--left">
+                        <button type="button" class="btn btn-delete" id="lineDetailDeleteBtn">Xóa</button>
+                        <button type="button" class="btn btn-delay" id="lineDetailDelayBtn" hidden>Delay</button>
+                        <button type="button" class="btn btn-plan" id="lineDetailPlanBtn" hidden>Kế hoạch</button>
+                    </div>
+                    <div class="modal__actions-group modal__actions-group--right">
+                        <button type="button" class="btn btn-edit" id="lineDetailEditBtn">Sửa</button>
+                        <button type="button" class="btn btn-status--change" id="lineDetailStatusBtn">Đăng ký</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script type="module" src="asset/js/event.js"></script>
+    <script type="module" src="asset/js/dialogs.js"></script>
+    <script>
+    // Global toast notifier (simple): showToast(message, { type: 'success'|'error'|'info', timeout })
+    window.showToast = function(message, opts = {}) {
+        try {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast toast--${opts.type || 'info'}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            // entrance
+            requestAnimationFrame(() => toast.classList.add('toast--visible'));
+            const timeout = typeof opts.timeout === 'number' ? opts.timeout : 3500;
+            setTimeout(() => {
+                toast.classList.remove('toast--visible');
+                setTimeout(() => toast.remove(), 300);
+            }, timeout);
+        } catch (e) {
+            // ignore
+        }
+    };
+    </script>
+
+    <!-- New: client-side rules for date / furnace / voltage and shift instruction (no new visible fields) -->
+    <script>
+    (function(){
+        const registerDate = document.getElementById('register-date');
+        const eventTitle = document.getElementById('event-title');
+        const registerQuantity = document.getElementById('register-quantity');
+        const serialContainer = document.getElementById('register-serial-container');
+        const modalForm = document.getElementById('modalRegisterForm');
+        const calendarGrid = document.getElementById('calendarGrid'); // used to detect existing bookings
+        // voltage element may already exist in your project; do not create a new one
+        const registerVoltage = document.getElementById('registerVoltage1') || document.getElementById('register-voltage1') || null;
+
+        function setOptionDisabled(selectEl, value, disabled){
+            if(!selectEl) return;
+            const opt = Array.from(selectEl.options).find(o=>o.value===value);
+            if(opt) opt.disabled = !!disabled;
+        }
+
+        // Try to infer voltage from known input (registerVoltage1) or from serial inputs (best-effort)
+        function getSelectedVoltage(){
+            if(registerVoltage && registerVoltage.value) return registerVoltage.value;
+            // look for inputs inside serialContainer that may carry data-voltage or a pattern "110"/"220"
+            if(serialContainer){
+                const volEl = serialContainer.querySelector('[data-voltage]');
+                if(volEl) return volEl.getAttribute('data-voltage');
+                // fallback: look for text nodes containing "110" or "220"
+                const text = serialContainer.textContent || '';
+                if(/\b110\b/.test(text)) return '110';
+                if(/\b220\b/.test(text)) return '220';
+            }
+            return ''; // unknown
+        }
+
+        // Count existing bookings on calendarGrid with matching data-date and data-furnace (best-effort)
+        function countExistingBookings(dateStr, furnaceVal){
+            if(!calendarGrid || !dateStr || !furnaceVal) return 0;
+            try{
+                const selector = `[data-date="${dateStr}"][data-furnace="${furnaceVal}"]`;
+                return calendarGrid.querySelectorAll(selector).length || 0;
+            }catch(e){
+                return 0;
+            }
+        }
+
+
+        function isSecondBooking(dateStr, furnaceVal, qty){
+            const existing = countExistingBookings(dateStr, furnaceVal);
+            return (existing >= 1) || (qty >= 2);
+        }
+
+        
+        // Intercept submit: decide on shift instruction for 05/11 if conditions met
+        if(modalForm){
+            modalForm.addEventListener('submit', function(e){
+                e.preventDefault();
+                const d = registerDate && registerDate.value;
+                const furnace = eventTitle && eventTitle.value;
+                const qty = parseInt((registerQuantity && registerQuantity.value) || '0', 10) || 0;
+                const voltage = getSelectedVoltage();
+
+                let shiftInfo = null;
+
+                // Rule: 05/11/2025, second booking for Lò 1 + 110kV => move phase2 to 2025-11-11 second_half
+                if(d === '2025-11-05' && furnace === 'lo1' && String(voltage) === '110' && isSecondBooking(d, furnace, qty)){
+                    shiftInfo = {
+                        action: 'shift_phase2',
+                        fromDate: d,
+                        toDate: '2025-11-11',
+                        toSlot: 'second_half',
+                        note: 'Auto-moved phase2 to 11/11 second_half for Lò 1 (110kV) due to second booking on 05/11'
+                    };
+                    if(window.showToast) window.showToast('Đăng ký thứ 2 (Lò 1, 110 kV): phase2 sẽ được dịch sang 11/11 (SH).', { type: 'info', timeout: 6000 });
+                } else {
+                    // 05/11 + 220kV: keep original logic (no shift)
+                    // other dates handled by constraints above
+                }
+
+                // Emit custom event with shiftInfo detail for existing save handler to use
+                const evtDetail = { shiftInfo: shiftInfo ? JSON.stringify(shiftInfo) : '' , formData: new FormData(modalForm) };
+                const evt = new CustomEvent('modalRegisterSubmit', { detail: evtDetail });
+                modalForm.dispatchEvent(evt);
+            });
+        }
+
+    })();
+    </script>
+
+    <div id="dialog-root"></div>
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>

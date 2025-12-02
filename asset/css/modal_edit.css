@@ -1,0 +1,38 @@
+.serial-grid__unit {
+	font-size: 14px;
+	color: rgba(208, 220, 255, 0.8);
+	white-space: nowrap;
+}
+
+/* Đổi màu icon calendar cho input định dạng ngày của modal edit (không đổi background) */
+input[type="date"].edit-date-picker::-webkit-calendar-picker-indicator {
+	/* chỉ ảnh hưởng tới icon; filter invert chuyển sang trắng, không thay đổi background */
+	filter: invert(1) brightness(1);
+	/* đảm bảo indicator hiển thị bình thường */
+	opacity: 1;
+	pointer-events: auto;
+}
+
+/* Một số engine/edge fallback (nếu hỗ trợ pseudo) */
+input[type="date"].edit-date-picker::-ms-clear,
+input[type="date"].edit-date-picker::-ms-expand {
+	filter: invert(1) brightness(1);
+	opacity: 1;
+}
+
+#modalLineDetailActions {
+	justify-content: space-between;
+}
+#modalLineDetailActions {
+	justify-content: space-between;
+}
+
+.modal__actions-group {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+#modalLineDetailActions .modal__actions-group {
+	align-items: center;
+}

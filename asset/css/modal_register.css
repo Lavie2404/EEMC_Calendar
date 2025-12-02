@@ -1,0 +1,342 @@
+body.modal-open {
+	overflow: hidden;
+}
+
+.modal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	padding: 24px;
+	z-index: 200;
+}
+
+.modal.is-open {
+	display: flex;
+}
+
+.modal__backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(3, 9, 24, 0.68);
+	backdrop-filter: blur(6px);
+}
+
+.modal__panel {
+	position: relative;
+	background: rgba(10, 17, 35, 0.96);
+	border-radius: 24px;
+	border: 1px solid rgba(65, 104, 200, 0.35);
+	box-shadow: 0 40px 90px rgba(2, 7, 20, 0.65);
+	width: min(520px, calc(100% - 32px));
+	max-width: 520px;
+	height: min(600px, calc(100vh - 48px));
+	max-height: 600px;
+	padding: 32px;
+	overflow: hidden;
+	color: #f3f6ff;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.modal__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	position: sticky;
+	top: 0;
+	background: inherit;
+	border-bottom: 1px solid rgba(65, 104, 200, 0.3);
+	z-index: 2;
+}
+
+.modal__close {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	border: 1px solid rgba(135, 162, 255, 0.35);
+	background: rgba(30, 51, 107, 0.55);
+	color: #fff;
+	font-size: 20px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.modal__close:hover {
+	background: rgba(79, 129, 255, 0.4);
+}
+
+.modal__form {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	overflow-y: auto;
+	padding-right: 6px;
+	gap: 18px;
+}
+
+.modal__section {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+	margin-top: 8px;
+}
+
+.serial-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.serial-grid__row {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.serial-grid__row > * {
+	flex: 1 1 200px;
+	min-width: 0;
+}
+
+.serial-grid__unit-field {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: 1 1 160px;
+}
+
+.serial-grid__unit-field select {
+	min-width: 0;
+}
+
+.serial-grid__unit {
+	font-size: 14px;
+	color: rgba(208, 220, 255, 0.8);
+	white-space: nowrap;
+}
+
+.serial-grid input,
+.serial-grid select {
+	width: 100%;
+	min-height: 44px;
+	border-radius: 12px;
+	border: 1px solid rgba(98, 130, 210, 0.35);
+	background: rgba(9, 15, 33, 0.9);
+	color: #f3f6ff;
+	padding: 10px 14px;
+	font-size: 15px;
+}
+
+.serial-grid input:focus,
+.serial-grid select:focus {
+	outline: none;
+	border-color: rgba(126, 181, 255, 0.9);
+	box-shadow: 0 0 0 3px rgba(64, 111, 255, 0.28);
+}
+
+.serial-grid__empty {
+	font-size: 13px;
+	color: rgba(208, 220, 255, 0.6);
+}
+
+.status-steps {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.status-step {
+	border: 1px dashed rgba(106, 139, 214, 0.4);
+	padding: 8px 12px;
+	border-radius: 12px;
+	background: rgba(13, 22, 48, 0.8);
+	color: #dfe7ff;
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	cursor: pointer;
+	transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.status-step.is-active {
+	border-style: solid;
+	border-color: rgba(99, 164, 255, 0.9);
+	background: rgba(79, 129, 255, 0.2);
+	color: #fff;
+}
+
+.status-step.is-completed:not(.is-active) {
+	border-style: solid;
+	border-color: rgba(91, 196, 182, 0.6);
+	background: rgba(46, 140, 119, 0.2);
+}
+
+.status-delay {
+	margin-top: 8px;
+	align-self: flex-start;
+	padding: 6px 16px;
+	border-radius: 20px;
+	/* use requested colors */
+	background: #fd7f7f;
+	border: 1px solid rgba(165, 0, 0, 0.12);
+	color: #a50000;
+	font-size: 12px;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	cursor: pointer;
+}
+
+.status-delay.is-active {
+	/* slightly stronger appearance when active */
+	background: #f65e5e;
+	border-color: #a50000;
+	color: #a50000;
+}
+
+.history-log {
+	border: 1px solid rgba(65, 104, 200, 0.25);
+	border-radius: 16px;
+	padding: 12px;
+	background: rgba(7, 12, 30, 0.6);
+	max-height: 500px;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	overscroll-behavior: contain;
+	-webkit-overflow-scrolling: touch;
+}
+
+.history-log__item {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding-bottom: 8px;
+	border-bottom: 1px dashed rgba(89, 120, 200, 0.25);
+}
+
+.history-log__item:last-child {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.history-log__status {
+	font-size: 13px;
+	font-weight: 600;
+	color: #f6f8ff;
+}
+
+.history-log__meta {
+	font-size: 12px;
+	color: rgba(209, 220, 255, 0.72);
+}
+
+.history-log__empty {
+	font-size: 13px;
+	color: rgba(208, 220, 255, 0.6);
+}
+
+.modal__field {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.modal__form.is-validated .modal__field:has(:invalid)::after {
+	content: "* Đây trường bắt buộc";
+	color: #ffb6b6;
+	font-size: 12px;
+	margin-top: -4px;
+	padding-left: 2px;
+	letter-spacing: 0.01em;
+	display: inline-block;
+}
+
+.modal__form.is-validated .modal__field :is(input, select):invalid,
+.modal__form.is-validated .serial-grid :is(input, select):invalid {
+	border-color: rgba(255, 114, 74, 0.9);
+	box-shadow: 0 0 0 2px rgba(255, 114, 74, 0.25);
+}
+
+.modal__field label {
+	font-size: 13px;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: rgba(208, 220, 255, 0.85);
+}
+
+.modal__field input,
+.modal__field select {
+	width: 100%;
+	min-height: 44px;
+	border-radius: 12px;
+	border: 1px solid rgba(98, 130, 210, 0.35);
+	background: rgba(9, 15, 33, 0.9);
+	color: #f3f6ff;
+	padding: 10px 14px;
+	font-size: 15px;
+}
+
+.modal__field input:focus,
+.modal__field select:focus {
+	outline: none;
+	border-color: rgba(126, 181, 255, 0.9);
+	box-shadow: 0 0 0 3px rgba(64, 111, 255, 0.28);
+}
+
+.modal__footer {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding-top: 16px;
+	border-top: 1px solid rgba(65, 104, 200, 0.25);
+	position: sticky;
+	bottom: 0;
+	background: inherit;
+	z-index: 2;
+}
+
+.modal__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 12px;
+}
+
+.serial-grid--readonly input,
+.serial-grid--readonly select {
+	background: rgba(9, 15, 33, 0.5);
+	border-color: rgba(98, 130, 210, 0.35);
+	cursor: default;
+}
+
+.serial-grid--readonly input {
+	color: rgba(243, 246, 255, 0.85);
+}
+
+.serial-grid--readonly select {
+	pointer-events: none;
+	color: rgba(243, 246, 255, 0.9);
+}
+
+.serial-grid--readonly .serial-grid__unit {
+	color: rgba(208, 220, 255, 0.65);
+}
+
+@media (max-width: 640px) {
+	.modal__panel {
+		padding: 24px;
+		height: min(600px, calc(100vh - 32px));
+	}
+
+	.modal__actions {
+		flex-wrap: wrap;
+		justify-content: flex-start;
+	}
+}

@@ -1,0 +1,127 @@
+// Toàn bộ code logic dịch ngày (shifting events) từ các file liên quan.
+// Bao gồm các hàm shiftFollowingEvents, shiftEventByDays và các hàm hỗ trợ từ calendar-core.js, calendar-app.js, và scripts.js.
+
+// Từ calendar-core.js
+function shiftFollowingEvents(scheduleId, baseISO, deltaDays, referenceFurnace = "") {
+    if (!scheduleId || !baseISO || deltaDays === 0 || deltaDays == null) return [];
+    try {
+        const schedule = getScheduleById(scheduleId);
+        const baseDate = stripTime(parseDateKey(baseISO));
+        const shifted = [];
+        const refNorm = normalizeFurnaceLabelLocal(referenceFurnace || "");
+
+        const candidates = (schedule.events || []).filter(evt => {
+            if (!evt || evt.id === state.event?.id) return false;
+            if (refNorm) {
+                const evtFurnace = normalizeFurnaceLabelLocal(evt.furnace || evt.furnaceLabel || "");
+                if (evtFurnace !== refNorm) return false;
+            }
+            const evtStart = evt.timeline?.stages?.length ? stripTime(evt.timeline.stages[0].start) : stripTime(parseDateKey(evt.date));
+            return evtStart && evtStart.getTime() > stripTime(parseDateKey(baseISO)).getTime();
+        });
+
+        candidates.sort((a, b) => {
+            const aStart = a.timeline?.stages?.length ? stripTime(a.timeline.stages[0].start) : stripTime(parseDateKey(a.date));
+            const bStart = b.timeline?.stages?.length ? stripTime(b.timeline.stages[0].start) : stripTime(parseDateKey(b.date));
+            return aStart - bStart;
+        });
+
+        for (const evt of candidates) {
+            shiftEventByDays(evt, deltaDays);
+            shifted.push(evt);
+        }
+
+        return shifted;
+    } catch (error) {
+        console.error("Error shifting following events:", error);
+        return [];
+    }
+}
+
+function shiftEventByDays(eventObj, days) {
+    if (!eventObj || !days) return;
+    const shiftDate = (iso) => {
+        if (!iso) return iso;
+        const d = parseDateKey(iso);
+        return formatDateForInput(addDays(d, days));
+    };
+    eventObj.date = shiftDate(eventObj.date);
+    if (eventObj.timeline && eventObj.timeline.stages) {
+        eventObj.timeline.stages.forEach(stage => {
+            stage.start = shiftDate(stage.start);
+            stage.end = shiftDate(stage.end);
+        });
+    }
+    eventObj.updatedAt = new Date().toISOString();
+}
+
+// Từ calendar-app.js
+function shiftFollowingEvents(referenceEvent, deltaDays) {
+    if (!deltaDays) return;
+    const refCreated = core.helpers.getCreatedAt(referenceEvent);
+    const affected = core.state.events.filter(evt => evt.kiln === referenceEvent.kiln && evt.id !== referenceEvent.id && core.helpers.getCreatedAt(evt) > refCreated);
+    affected.forEach(evt => {
+        evt.startDate = core.helpers.formatDateForInput(core.helpers.addDays(core.helpers.parseDateKey(evt.startDate), deltaDays));
+        evt.phase2StartDate = evt.phase2StartDate
+            ? core.helpers.formatDateForInput(core.helpers.addDays(core.helpers.parseDateKey(evt.phase2StartDate), deltaDays))
+            : core.helpers.computeDefaultPhase2Start(evt.startDate);
+        const updatedPhase2 = core.helpers.getEventPhase2Dates(evt);
+        evt.endDate = updatedPhase2[updatedPhase2.length - 1];
+        evt.updatedAt = new Date().toISOString();
+    });
+}
+
+// Từ scripts.js (tương tự calendar-app.js)
+function shiftFollowingEvents(referenceEvent, deltaDays) {
+    if (!deltaDays) return;
+    const refCreated = core.helpers.getCreatedAt(referenceEvent);
+    const affected = core.state.events.filter(evt => evt.kiln === referenceEvent.kiln && evt.id !== referenceEvent.id && core.helpers.getCreatedAt(evt) > refCreated);
+    affected.forEach(evt => {
+        evt.startDate = core.helpers.formatDateForInput(core.helpers.addDays(core.helpers.parseDateKey(evt.startDate), deltaDays));
+        evt.phase2StartDate = evt.phase2StartDate
+            ? core.helpers.formatDateForInput(core.helpers.addDays(core.helpers.parseDateKey(evt.phase2StartDate), deltaDays))
+            : core.helpers.computeDefaultPhase2Start(evt.startDate);
+        const updatedPhase2 = core.helpers.getEventPhase2Dates(evt);
+        evt.endDate = updatedPhase2[updatedPhase2.length - 1];
+        evt.updatedAt = new Date().toISOString();
+    });
+}
+
+// Các hàm hỗ trợ từ calendar-core.js (liên quan đến dịch ngày)
+function addDays(date, amount) {
+    const result = new Date(date);
+    result.setDate(result.getDate() + amount);
+    return result;
+}
+
+function parseDateKey(dateKey) {
+    if (!dateKey) return null;
+    const parts = dateKey.split('-');
+    if (parts.length !== 3) return null;
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // Tháng bắt đầu từ 0
+    const day = parseInt(parts[2], 10);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+    return new Date(year, month, day);
+}
+
+function formatDateForInput(date) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function stripTime(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function normalizeFurnaceLabelLocal(value = "") {
+    return (value || "").trim().toLowerCase();
+}
+
+function getScheduleById(scheduleId) {
+    // Giả định hàm này trả về schedule từ store
+    return core.state.calendarStores[scheduleId] || { events: [] };
+}
