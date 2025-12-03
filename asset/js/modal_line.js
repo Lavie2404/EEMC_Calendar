@@ -607,6 +607,8 @@ function deleteCurrentLineDetail() {
 	state.event.slots = state.event.quantity;
 	const furnaceLabel = state.event.furnace || state.event.furnaceLabel || "";
 	const isLo2 = isLo2Furnace(furnaceLabel);
+	const isLo1 = isLo1Furnace(furnaceLabel);
+	const allowSundayStarts = isLo1 || isLo2;
 
 	recalculateEventStatus();
 
@@ -616,7 +618,7 @@ function deleteCurrentLineDetail() {
 		return true;
 	}
 
-	rebuildTimelineForRemainingLines(isLo2);
+	rebuildTimelineForRemainingLines(allowSundayStarts);
 	persistEvent();
 	if (isLo2 && state.scheduleId) {
 		try {
@@ -629,7 +631,7 @@ function deleteCurrentLineDetail() {
 	return true;
 }
 
-function rebuildTimelineForRemainingLines(isLo2Event) {
+function rebuildTimelineForRemainingLines(allowSundayStarts) {
 	if (!state.event) {
 		return;
 	}
@@ -647,7 +649,7 @@ function rebuildTimelineForRemainingLines(isLo2Event) {
 	if (!durationRules) {
 		return;
 	}
-	const options = isLo2Event ? { allowSundaySecondHalfStart: true } : {};
+	const options = allowSundayStarts ? { allowSundaySecondHalfStart: true } : {};
 	try {
 		state.event.timeline = buildTimeline(baseStartISO, durationRules, options);
 		state.event.voltageLabel = highestVoltage === "220" ? "220 kV" : "< 220 kV";

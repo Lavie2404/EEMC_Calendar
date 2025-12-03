@@ -1158,6 +1158,7 @@ function commitEditChanges(newDate, newSerials) {
 		stored.voltageLabel = formatVoltageLabelByKey(updatedVoltageKey);
 		const furnaceLabel = stored.furnace || stored.furnaceLabel || "";
 		const isLo2Event = isLo2Furnace(furnaceLabel);
+		const allowSundayStarts = isLo2Event || isLo1Furnace(furnaceLabel);
 		const baseStartISO = newDate || stored.timeline?.start || stored.timeline?.stages?.[0]?.start || stored.date;
 		const rules = VOLTAGE_RULES[updatedVoltageKey] || VOLTAGE_RULES["110"];
 		let forcedPhase2StartISO = null;
@@ -1168,8 +1169,8 @@ function commitEditChanges(newDate, newSerials) {
 		// corrects timeline durations if voltage changed.
 		try {
 			if (baseStartISO && rules) {
-				const lo2Opts = isLo2Event ? { allowSundaySecondHalfStart: true } : {};
-				stored.timeline = buildTimeline(baseStartISO, rules, lo2Opts);
+				const sundayOpts = allowSundayStarts ? { allowSundaySecondHalfStart: true } : {};
+				stored.timeline = buildTimeline(baseStartISO, rules, sundayOpts);
 			}
 		} catch (e) {
 			// non-fatal
@@ -1195,8 +1196,8 @@ function commitEditChanges(newDate, newSerials) {
 		}
 		if (forcedPhase2StartISO && baseStartISO && rules) {
 			try {
-				const lo2Opts = isLo2Event ? { allowSundaySecondHalfStart: true } : {};
-				stored.timeline = buildTimeline(baseStartISO, rules, { ...lo2Opts, forcedPhase2StartISO, allowForcedWithinMinGap: true });
+				const sundayOpts = allowSundayStarts ? { allowSundaySecondHalfStart: true } : {};
+				stored.timeline = buildTimeline(baseStartISO, rules, { ...sundayOpts, forcedPhase2StartISO, allowForcedWithinMinGap: true });
 			} catch (err) {
 				console.warn('[edit] failed to rebuild timeline with forced phase2 start', err);
 			}

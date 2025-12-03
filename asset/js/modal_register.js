@@ -327,7 +327,9 @@ function handleSubmit(event) {
 	}
 
 	const isLo2Registration = isLo2Furnace(furnaceSelect?.value || "");
-	const applyTimelineOpts = (extra = {}) => (isLo2Registration ? { ...extra, allowSundaySecondHalfStart: true } : { ...extra });
+	const isLo1Registration = isLo1Furnace(furnaceSelect?.value || "");
+	const allowSundayStarts = isLo1Registration || isLo2Registration;
+	const applyTimelineOpts = (extra = {}) => (allowSundayStarts ? { ...extra, allowSundaySecondHalfStart: true } : { ...extra });
 	const highestVoltage = getHighestVoltage(serialEntries);
 	const has220 = highestVoltage === "220";
 	const durations = VOLTAGE_RULES[has220 ? "220" : "110"];
@@ -1188,7 +1190,7 @@ function buildTimeline(startISO, durationRules, opts = {}) {
 
 	// Apply rule to stage1 start (cursor)
 	try {
-		const maybeShifted = shiftSundaySecondHalfForward(stage1Start);
+		const maybeShifted = shiftSundaySecondHalfForward(stage1Start, allowSundaySecondHalfStart);
 		if (maybeShifted.getTime() !== stage1Start.getTime()) {
 			// recompute end based on shifted start
 			const shiftedEnd = addDays(maybeShifted, phase1Days - 1);
@@ -2608,11 +2610,15 @@ function rebuildEventPhase2Start(scheduleId, event, forcedPhase2StartISO, opts =
 	if (!baseStartISO || !durationRules) {
 		return null;
 	}
-	const rebuilt = buildTimeline(baseStartISO, durationRules, {
+	const furnaceLabel = event.furnace || event.furnaceLabel || "";
+	const allowSundayStarts = isLo1Furnace(furnaceLabel) || isLo2Furnace(furnaceLabel);
+	const baseOptions = {
 		forcedPhase2StartISO,
-		allowForcedWithinMinGap: true,
+		allowForcedWithinMinGap: opts.allowForcedWithinMinGap !== undefined ? opts.allowForcedWithinMinGap : true,
 		forceExactPhase2Start: opts.forceExactPhase2Start !== undefined ? opts.forceExactPhase2Start : true
-	});
+	};
+	const timelineOptions = allowSundayStarts ? { ...baseOptions, allowSundaySecondHalfStart: true } : baseOptions;
+	const rebuilt = buildTimeline(baseStartISO, durationRules, timelineOptions);
 	if (!rebuilt) {
 		return null;
 	}
