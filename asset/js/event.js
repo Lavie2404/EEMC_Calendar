@@ -290,9 +290,12 @@ function collectVoltageSlots(evt) {
 					ensureSlot(normalizedVoltage, normalizeStatusKey(detail.status || evt.status || ""), Number(detail.lineIndex) || null);
 				}
 			});
-			const desiredLines = Math.max(2, Number(evt.quantity) || evt.serialDetails.length || 0);
+			const parsedQuantity = Number(evt.quantity);
+			const quantityValue = Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 0;
+			const desiredLines = Math.max(evt.serialDetails.length || 0, quantityValue, 1);
 			while (slots.length < desiredLines) {
-				ensureSlot(slots[0]?.voltage || detectEventVoltage(evt) || "110", baseVariant, slots.length + 1);
+				const fallbackVoltage = slots[0]?.voltage || detectEventVoltage(evt) || "110";
+				ensureSlot(fallbackVoltage, baseVariant, slots.length + 1);
 			}
 			return slots;
 		}
