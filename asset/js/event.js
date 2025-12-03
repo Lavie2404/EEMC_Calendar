@@ -579,7 +579,8 @@ function formatCompactDate(iso) {
 }
 
 function buildRegistrationSummary(event) {
-	const serials = Array.isArray(event.serials) ? event.serials.join(", ") : "";
+	const serialList = formatSerialListForDisplay(event);
+	const serials = serialList.length ? serialList.join(", ") : "";
 	return [
 		event.furnace,
 		event.registrant,
@@ -1123,9 +1124,8 @@ function parseISODate(iso) {
 }
 
 function buildStageBarLabel(event, segment) {
-	const serialText = Array.isArray(event.serials) && event.serials.length
-		? event.serials.join(", ")
-		: "Chưa có serial";
+	const serialList = formatSerialListForDisplay(event);
+	const serialText = serialList.length ? serialList.join(", ") : "Chưa có serial";
 	return `${event.furnace} • ${event.registrant} • ${serialText} • ${event.status} • ${segment.label}`;
 }
 
@@ -1146,7 +1146,7 @@ function buildLo2BarConfigs(event, stage) {
 		const detail = details.find(d => Number(d.lineIndex) === lineIndex) || details[lineIndex - 1] || null;
 		if (detail) {
 			const serialLabel = detail.serial || `Serial ${lineIndex}`;
-			const voltageLabel = detail.voltageLabel || (detail.voltageValue ? `${detail.voltageValue} kV` : "");
+			const voltageLabel = ensureVoltageLabelWithUnit(detail.voltageLabel, detail.voltageValue);
 			const serialWithVoltage = voltageLabel ? `${serialLabel} (${voltageLabel})` : serialLabel;
 			const statusLabel = detail.status || event.status || "";
 			const label = `Lò 2 • ${registrant} • ${serialWithVoltage} • ${statusLabel} • ${stage.label}`;
@@ -1174,6 +1174,74 @@ function buildLo2BarConfigs(event, stage) {
 	}
 
 	return configs;
+}
+
+function formatSerialListForDisplay(event = {}) {
+	const details = Array.isArray(event.serialDetails) ? event.serialDetails : [];
+	if (details.length) {
+		return details
+			.map(detail => formatSerialEntry(detail?.serial, detail?.voltageLabel, detail?.voltageValue))
+			.filter(Boolean);
+	}
+	const summaries = Array.isArray(event.serials) ? event.serials : [];
+	return summaries
+		.map(text => {
+			const parsed = parseSerialSummaryText(text);
+			return formatSerialEntry(parsed.serial, parsed.voltageLabel, parsed.voltageValue);
+		})
+		.filter(Boolean);
+}
+
+function formatSerialEntry(serial, voltageLabel, voltageValue) {
+	const trimmedSerial = String(serial || "").trim();
+	if (!trimmedSerial) {
+		return "";
+	}
+	const normalizedVoltage = ensureVoltageLabelWithUnit(voltageLabel, voltageValue);
+	return normalizedVoltage ? `${trimmedSerial} (${normalizedVoltage})` : trimmedSerial;
+}
+
+function parseSerialSummaryText(text = "") {
+	const trimmed = String(text || "").trim();
+	if (!trimmed) {
+		return { serial: "", voltageLabel: "", voltageValue: "" };
+	}
+	const match = trimmed.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+	if (!match) {
+		return { serial: trimmed, voltageLabel: "", voltageValue: "" };
+	}
+	const voltageLabel = match[2].trim();
+	return {
+		serial: match[1].trim(),
+		voltageLabel,
+		voltageValue: deriveVoltageDigits(voltageLabel)
+	};
+}
+
+function deriveVoltageDigits(source = "") {
+	const match = String(source || "").match(/(\d{2,3})/);
+	return match ? match[1] : "";
+}
+
+function ensureVoltageLabelWithUnit(label = "", fallbackValue = "") {
+	const trimmed = String(label || "").trim();
+	const digits = String(fallbackValue || "").trim() || deriveVoltageDigits(trimmed);
+	if (!trimmed) {
+		return digits ? `${digits} kV` : "";
+	}
+	if (/\bk\s*V\b/i.test(trimmed)) {
+		return trimmed;
+	}
+	if (digits) {
+		const pattern = new RegExp(`(${digits})(?!\\s*k\\s*v)`, "i");
+		if (pattern.test(trimmed)) {
+			return trimmed.replace(pattern, `${digits} kV`);
+		}
+		if (trimmed === digits) {
+			return `${digits} kV`;
+		}
+	}
+	return `${trimmed} kV`;
 }
 
 function handleTimelineButtonClick(event) {

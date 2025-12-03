@@ -1004,10 +1004,12 @@ function shiftFollowingEvents(scheduleId, baseISO, deltaDays) {
 export { shiftEventByDays, shiftFollowingEvents };
 
 // Keep Lo2 events chained so each phase1 begins immediately after previous phase1 ends.
-function alignLo2Phase1Chain(scheduleId, anchorEvent) {
+function alignLo2Phase1Chain(scheduleId, anchorEvent, options = {}) {
 	if (!scheduleId || !anchorEvent || !isLo2Furnace(anchorEvent.furnace || anchorEvent.furnaceLabel || "")) {
 		return [];
 	}
+	const skipAnchorRealign = Boolean(options.skipAnchorRealign);
+	const anchorId = anchorEvent?.id;
 	let schedule;
 	try {
 		schedule = getScheduleById(scheduleId);
@@ -1040,6 +1042,11 @@ function alignLo2Phase1Chain(scheduleId, anchorEvent) {
 	for (let idx = 1; idx < chain.length; idx += 1) {
 		const evt = chain[idx];
 		if (!evt) {
+			continue;
+		}
+		const isAnchorEvent = anchorId && evt.id === anchorId;
+		if (isAnchorEvent && skipAnchorRealign) {
+			previousPhase1End = getPhase1EndISO(evt) || previousPhase1End;
 			continue;
 		}
 		if (!previousPhase1End) {
@@ -1242,8 +1249,9 @@ function commitEditChanges(newDate, newSerials) {
 
 		let lo2Aligned = [];
 		if (isLo2Event) {
+			const skipAnchorRealign = delta === 0; // keep edited event's start date when no explicit date change
 			try {
-				lo2Aligned = alignLo2Phase1Chain(state.scheduleId, stored);
+				lo2Aligned = alignLo2Phase1Chain(state.scheduleId, stored, { skipAnchorRealign });
 			} catch (err) {
 				console.warn('[edit] alignLo2Phase1Chain failed', err);
 			}

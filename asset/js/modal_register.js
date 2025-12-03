@@ -1656,6 +1656,19 @@ function harmonizeLo2Timelines(scheduleId) {
 					const a = provisional[i];
 					const b = provisional[j];
 					if (!a || !b || !a.built || !b.built) continue;
+					// If the persisted phase2 end of A is already before the persisted phase1 start of B,
+					// treat them as non-overlapping even if the provisional/global timelines would overlap.
+					// This prevents artificial pushes when upgrading B to 220 kV stretches A's provisional
+					// timeline even though the saved schedule shows A finishing earlier.
+					try {
+						const actualAP2End = isoToDayDate(a?.evt?.timeline?.stages?.find(stage => stage && stage.id === 'phase2')?.end);
+						const actualBP1Start = isoToDayDate((b?.evt?.timeline?.stages?.find(stage => stage && stage.id === 'phase1')?.start) || b?.baseStart);
+						if (actualAP2End && actualBP1Start && actualAP2End.getTime() < actualBP1Start.getTime()) {
+							continue;
+						}
+					} catch (guardErr) {
+						// ignore guard failures; fall back to provisional comparisons
+					}
 					const aP2Start = a.stage2Start ? new Date(`${a.stage2Start}T00:00:00`) : null;
 					const aP2End = a.stage2End ? new Date(`${a.stage2End}T00:00:00`) : null;
 					const bP1End = b.stage1End ? new Date(`${b.stage1End}T00:00:00`) : null;
@@ -2276,9 +2289,12 @@ function shiftLo2PeersForUpgradedVoltage({ scheduleId, upgradedEvent }) {
 				if (previousLo2 && previousLo2.id !== upgradedEvent.id) {
 					const prevPhase2 = previousLo2.timeline?.stages?.find(stage => stage.id === 'phase2');
 					const prevPhase2StartDay = prevPhase2?.start ? isoToDayDate(prevPhase2.start) : null;
-					// Always ensure the preceding event hands the furnace off exactly at
-					// the upgraded event's phase1 end so the 220 kV chain mirrors Lò 1.
-					if (!prevPhase2StartDay || prevPhase2StartDay.getTime() < anchorDay.getTime()) {
+					const prevPhase2EndDay = prevPhase2?.end ? isoToDayDate(prevPhase2.end) : null;
+					const upgradedStartDay = isoToDayDate(baseStartISO);
+					const previousFinishedBeforeUpgrade = prevPhase2EndDay && upgradedStartDay && prevPhase2EndDay.getTime() < upgradedStartDay.getTime();
+					const alreadyPastAnchor = prevPhase2StartDay && anchorDay && prevPhase2StartDay.getTime() >= anchorDay.getTime();
+					const shouldRealignPrevious = prevPhase2 && anchorDay && !previousFinishedBeforeUpgrade && !alreadyPastAnchor;
+					if (shouldRealignPrevious) {
 						try {
 							rebuildEventPhase2Start(scheduleId, previousLo2, anchorISO, { forceExactPhase2Start: true });
 						} catch (err) {
@@ -2769,6 +2785,20 @@ function resolveLo2AnchorsForUpgrade({ scheduleId, targetEventId, furnaceValue, 
 		return result;
 	}
 	const prevPhase2Stage = previousEvent.timeline?.stages?.find(stage => stage && stage.id === 'phase2');
+	const prevPhase2StartDay = prevPhase2Stage?.start ? isoToDayDate(prevPhase2Stage.start) : null;
+	const prevPhase2EndDay = prevPhase2Stage?.end ? isoToDayDate(prevPhase2Stage.end) : null;
+	const newStartISO = newPhase1.start || baseTimeline.start || null;
+	const newStartDay = newStartISO ? isoToDayDate(newStartISO) : null;
+	const anchorDay = isoToDayDate(newPhase1.end);
+	if (!prevPhase2Stage || !newStartDay || !anchorDay) {
+		return result;
+	}
+	if (prevPhase2EndDay && prevPhase2EndDay.getTime() < newStartDay.getTime()) {
+		return result;
+	}
+	if (prevPhase2StartDay && prevPhase2StartDay.getTime() >= anchorDay.getTime()) {
+		return result;
+	}
 	const alreadyAligned = prevPhase2Stage?.start === newPhase1.end;
 	let updatedPreviousTimeline = null;
 	if (!alreadyAligned) {
