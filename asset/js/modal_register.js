@@ -1655,7 +1655,9 @@ function harmonizeLo2Timelines(scheduleId) {
 					const b = provisional[j];
 					if (!a || !b || !a.built || !b.built) continue;
 					const aP2Start = a.stage2Start ? new Date(`${a.stage2Start}T00:00:00`) : null;
+					const aP2End = a.stage2End ? new Date(`${a.stage2End}T00:00:00`) : null;
 					const bP1End = b.stage1End ? new Date(`${b.stage1End}T00:00:00`) : null;
+					const bBaseStartDate = b.baseStart ? new Date(`${b.baseStart}T00:00:00`) : null;
 					if (!aP2Start || !bP1End) continue;
 
 					// Lo2 yêu cầu: khi một sự kiện phía sau (B) chứa ít nhất một máy 220 kV,
@@ -1663,7 +1665,8 @@ function harmonizeLo2Timelines(scheduleId) {
 					// để tránh trùng với lịch mới. Điều này mô phỏng điều chỉnh thủ công đã làm ở Lò 1.
 					try {
 						const bHighestVoltage = getHighestVoltage(extractSerialDetailsFromEvent(b.evt));
-						if (String(bHighestVoltage) === '220' && b.stage1End) {
+						const shouldAnchorB220 = Boolean(bBaseStartDate && aP2End && bBaseStartDate.getTime() <= aP2End.getTime());
+						if (String(bHighestVoltage) === '220' && b.stage1End && shouldAnchorB220) {
 							const anchorBPhase1End = new Date(`${b.stage1End}T00:00:00`);
 							if (!aP2Start || aP2Start.getTime() < anchorBPhase1End.getTime()) {
 								const aHighestVoltage = getHighestVoltage(extractSerialDetailsFromEvent(a.evt));
@@ -2651,6 +2654,7 @@ function resolvePhaseAnchorsForRegistration({ scheduleId, furnaceValue, newTimel
 		return result;
 	}
 	const anchorISO = newPhase1.end;
+	const newStartDay = startISO ? isoToDayDate(startISO) : null;
 	const sameFurnaceEvents = (schedule.events || [])
 		.filter(evt => evt && normalizeFurnaceKey(evt.furnace || evt.furnaceLabel || "") === targetFurnaceKey)
 		.sort((a, b) => {
@@ -2675,7 +2679,13 @@ function resolvePhaseAnchorsForRegistration({ scheduleId, furnaceValue, newTimel
 	const prevPhase2 = previousEvent.timeline?.stages?.find(stage => stage.id === "phase2");
 	const anchorDay = isoToDayDate(anchorISO);
 	const prevPhase2StartDay = prevPhase2?.start ? isoToDayDate(prevPhase2.start) : null;
-	if (!prevPhase2 || !anchorDay || (prevPhase2StartDay && prevPhase2StartDay.getTime() >= anchorDay.getTime())) {
+	const prevPhase2EndDay = prevPhase2?.end ? isoToDayDate(prevPhase2.end) : null;
+	if (!prevPhase2 || !anchorDay || !newStartDay || (prevPhase2StartDay && prevPhase2StartDay.getTime() >= anchorDay.getTime())) {
+		return result;
+	}
+	// Skip anchoring when the previous event already finished before the new
+	// registration begins; this matches the expected 110kV behavior.
+	if (prevPhase2EndDay && prevPhase2EndDay.getTime() < newStartDay.getTime()) {
 		return result;
 	}
 	const rebuilt = rebuildEventPhase2Start(scheduleId, previousEvent, anchorISO, { forceExactPhase2Start: true });

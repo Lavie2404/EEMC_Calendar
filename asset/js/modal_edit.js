@@ -1003,6 +1003,88 @@ function shiftFollowingEvents(scheduleId, baseISO, deltaDays) {
 // Export helpers so other modules can reuse shifting logic
 export { shiftEventByDays, shiftFollowingEvents };
 
+// Keep Lo2 events chained so each phase1 begins immediately after previous phase1 ends.
+function alignLo2Phase1Chain(scheduleId, anchorEvent) {
+	if (!scheduleId || !anchorEvent || !isLo2Furnace(anchorEvent.furnace || anchorEvent.furnaceLabel || "")) {
+		return [];
+	}
+	let schedule;
+	try {
+		schedule = getScheduleById(scheduleId);
+	} catch (err) {
+		console.warn("alignLo2Phase1Chain: schedule lookup failed", err);
+		return [];
+	}
+	if (!schedule || !Array.isArray(schedule.events)) {
+		return [];
+	}
+	const furnaceKey = normalizeFurnaceLabel(anchorEvent.furnace || anchorEvent.furnaceLabel || "");
+	if (!furnaceKey) {
+		return [];
+	}
+	const chain = (schedule.events || [])
+		.filter(evt => evt && normalizeFurnaceLabel(evt.furnace || evt.furnaceLabel || "") === furnaceKey)
+		.sort((a, b) => {
+			const aISO = getEventStartISO(a);
+			const bISO = getEventStartISO(b);
+			if (!aISO && !bISO) return 0;
+			if (!aISO) return -1;
+			if (!bISO) return 1;
+			return parseISODate(aISO) - parseISODate(bISO);
+		});
+	if (!chain.length) {
+		return [];
+	}
+	let previousPhase1End = getPhase1EndISO(chain[0]);
+	const updated = [];
+	for (let idx = 1; idx < chain.length; idx += 1) {
+		const evt = chain[idx];
+		if (!evt) {
+			continue;
+		}
+		if (!previousPhase1End) {
+			previousPhase1End = getPhase1EndISO(evt);
+			continue;
+		}
+		const currentPhase1 = evt.timeline?.stages?.find(stage => stage && stage.id === "phase1");
+		const currentStartISO = currentPhase1?.start || evt.timeline?.start || evt.date;
+		if (currentStartISO === previousPhase1End) {
+			previousPhase1End = getPhase1EndISO(evt) || previousPhase1End;
+			continue;
+		}
+		const voltageKey = determineVoltageKeyFromDetails(evt.serialDetails, evt.voltageLabel, evt.serials);
+		const durations = VOLTAGE_RULES[voltageKey] || VOLTAGE_RULES["110"];
+		let rebuilt = null;
+		try {
+			rebuilt = buildTimeline(previousPhase1End, durations, { allowSundaySecondHalfStart: true, allowForcedWithinMinGap: true });
+		} catch (err) {
+			console.warn("alignLo2Phase1Chain: buildTimeline failed", err);
+		}
+		if (!rebuilt) {
+			previousPhase1End = getPhase1EndISO(evt) || previousPhase1End;
+			continue;
+		}
+		evt.timeline = rebuilt;
+		evt.date = rebuilt.stages?.[0]?.start || previousPhase1End;
+		refreshEventMetadata(evt);
+		try {
+			updateEvent(scheduleId, evt);
+		} catch (err) {
+			console.warn("alignLo2Phase1Chain: updateEvent failed", err);
+		}
+		updated.push(evt);
+		previousPhase1End = getPhase1EndISO(evt) || previousPhase1End;
+	}
+	return updated;
+}
+
+function getPhase1EndISO(evt) {
+	if (!evt) {
+		return null;
+	}
+	return evt.timeline?.stages?.find(stage => stage && stage.id === "phase1")?.end || null;
+}
+
 // Save edited date/serial/voltage directly
 async function handleEditToggle() {
 	if (!state.event || !serialGrid) return;
@@ -1157,13 +1239,24 @@ function commitEditChanges(newDate, newSerials) {
 			shifted = shiftFollowingEvents(state.scheduleId, originalISO, delta) || [];
 		}
 
+		let lo2Aligned = [];
+		if (isLo2Event) {
+			try {
+				lo2Aligned = alignLo2Phase1Chain(state.scheduleId, stored);
+			} catch (err) {
+				console.warn('[edit] alignLo2Phase1Chain failed', err);
+			}
+		}
+
 		// update timeline bars (best-effort) and trigger app-wide refresh
 		updateTimelineBarsForEvent(state.event);
 		shifted.forEach(ev => updateTimelineBarsForEvent(ev));
+		lo2Aligned.forEach(ev => updateTimelineBarsForEvent(ev));
 
 		// dispatch saved events: base + shifted (listeners will re-render the calendar)
 		document.dispatchEvent(new CustomEvent("registration:saved", { detail: state.event }));
 		shifted.forEach(ev => document.dispatchEvent(new CustomEvent("registration:saved", { detail: ev })));
+		lo2Aligned.forEach(ev => document.dispatchEvent(new CustomEvent("registration:saved", { detail: ev })));
 		// show success toast
 		try { if (typeof window !== 'undefined' && typeof window.showToast === 'function') window.showToast('Lưu thay đổi thành công', { type: 'success' }); } catch (e) {}
 	} catch (e) {
